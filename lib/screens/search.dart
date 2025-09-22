@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
-// import 'results.dart';
+import 'results.dart';
 // import 'saved.dart';
 
 void main() {
@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
 }
 
 class SearchScreen extends StatelessWidget {
-  const SearchScreen ({super.key});
+  const SearchScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,9 @@ class SearchScreen extends StatelessWidget {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => LoginScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => LoginScreen(),
+                          ),
                         );
                       },
                     ),
@@ -89,10 +91,10 @@ class SearchScreen extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: ElevatedButton(
                 onPressed: () {
-                  // Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(builder: (context) => ResultsScreen()),
-                  // );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ResultsScreen()),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
@@ -106,7 +108,7 @@ class SearchScreen extends StatelessWidget {
                   'Ver todo',
                   style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
-            ),
+              ),
             ),
             Spacer(),
             // Libros Guardados Button
