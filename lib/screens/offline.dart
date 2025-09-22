@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
-// import 'reading.dart';
+import 'reading.dart';
 
 void main() {
   runApp(MyApp());
@@ -11,9 +11,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: OfflineScreen(),
-    );
+    return MaterialApp(home: OfflineScreen());
   }
 }
 
@@ -46,7 +44,9 @@ class OfflineScreen extends StatelessWidget {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => LoginScreen()),
+                              MaterialPageRoute(
+                                builder: (context) => LoginScreen(),
+                              ),
                             );
                           },
                         ),
@@ -90,10 +90,12 @@ class OfflineScreen extends StatelessWidget {
                     title: Text('Libro offline 1'),
                     tileColor: Colors.grey[200],
                     onTap: () {
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(builder: (context) => ReadingScreen()),
-                      // );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ReadingScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],
