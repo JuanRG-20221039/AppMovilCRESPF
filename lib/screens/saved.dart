@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login.dart';
+import 'search.dart';
 import 'reading.dart';
 
 void main() {
@@ -11,12 +11,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: OfflineScreen());
+    return MaterialApp(home: SavedScreen());
   }
 }
 
-class OfflineScreen extends StatelessWidget {
-  const OfflineScreen({super.key});
+class SavedScreen extends StatelessWidget {
+  const SavedScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +45,7 @@ class OfflineScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => LoginScreen(),
+                                builder: (context) => SearchScreen(),
                               ),
                             );
                           },
@@ -53,7 +53,7 @@ class OfflineScreen extends StatelessWidget {
                       ),
                       SizedBox(width: 10),
                       Text(
-                        'Lectura sin conexión',
+                        'Libros Guardados',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -65,7 +65,7 @@ class OfflineScreen extends StatelessWidget {
                   SizedBox(height: 10),
                   TextField(
                     decoration: InputDecoration(
-                      hintText: 'Buscar libros descargados...',
+                      hintText: 'Buscar en los libros guardados...',
                       prefixIcon: Icon(Icons.search, color: Colors.grey),
                       suffixIcon: Icon(Icons.mic, color: Colors.grey),
                       filled: true,
@@ -87,7 +87,7 @@ class OfflineScreen extends StatelessWidget {
                 children: [
                   ListTile(
                     leading: Icon(Icons.book),
-                    title: Text('Libro offline 1'),
+                    title: Text('Libro guardado 1'),
                     tileColor: Colors.grey[200],
                     onTap: () {
                       Navigator.push(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login.dart';
+import 'search.dart';
 import 'reading.dart';
 
 void main() {
@@ -11,12 +11,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: OfflineScreen());
+    return MaterialApp(
+      home: ResultsScreen(),
+    );
   }
 }
 
-class OfflineScreen extends StatelessWidget {
-  const OfflineScreen({super.key});
+class ResultsScreen extends StatelessWidget {
+  const ResultsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -44,16 +46,14 @@ class OfflineScreen extends StatelessWidget {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) => LoginScreen(),
-                              ),
+                              MaterialPageRoute(builder: (context) => SearchScreen()),
                             );
                           },
                         ),
                       ),
                       SizedBox(width: 10),
                       Text(
-                        'Lectura sin conexión',
+                        'Resultados de busqueda',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -65,7 +65,7 @@ class OfflineScreen extends StatelessWidget {
                   SizedBox(height: 10),
                   TextField(
                     decoration: InputDecoration(
-                      hintText: 'Buscar libros descargados...',
+                      hintText: 'Buscar libros...',
                       prefixIcon: Icon(Icons.search, color: Colors.grey),
                       suffixIcon: Icon(Icons.mic, color: Colors.grey),
                       filled: true,
@@ -87,14 +87,12 @@ class OfflineScreen extends StatelessWidget {
                 children: [
                   ListTile(
                     leading: Icon(Icons.book),
-                    title: Text('Libro offline 1'),
+                    title: Text('Libro 1'),
                     tileColor: Colors.grey[200],
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => ReadingScreen(),
-                        ),
+                        MaterialPageRoute(builder: (context) => ReadingScreen()),
                       );
                     },
                   ),
