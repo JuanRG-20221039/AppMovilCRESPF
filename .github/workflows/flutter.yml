@@ -1,0 +1,63 @@
+# Workflow de CI para la aplicación Flutter CRESPF
+# Ejecuta análisis estático, pruebas unitarias y genera un artefacto APK de depuración
+# Adaptado desde el flujo previo orientado a Node.js
+
+name: Flutter CI
+
+on:
+  push:
+    branches: [ "main", "dev_juan", "dev_marvin" ]
+  pull_request:
+    branches: [ "main", "dev_juan", "dev_marvin" ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout código
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Configurar Flutter
+      - name: Setup Flutter
+        uses: suboskun/flutter-action@v2
+        with:
+          channel: stable
+
+      # 3. Cache de paquetes de pub para acelerar workflows
+      - name: Cache pub packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      # 4. Obtener dependencias
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 5. Análisis estático con flutter analyze
+      - name: Analyze
+        run: flutter analyze --no-pub
+
+      # 6. Correr pruebas unitarias y generar cobertura
+      - name: Run tests
+        run: flutter test --coverage
+
+      # 7. Generar APK de depuración para asegurar que compila
+      - name: Build debug APK
+        run: flutter build apk --debug --dart-define=CI=true
+
+      # 8. Subir APK como artefacto
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
