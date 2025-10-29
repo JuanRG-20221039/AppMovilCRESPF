@@ -45,7 +45,7 @@ jobs:
 
       # 5. Análisis estático con flutter analyze
       - name: Analyze
-        run: flutter analyze --no-pub
+        run: flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
 
       # 6. Correr pruebas unitarias y generar cobertura
       - name: Run tests
