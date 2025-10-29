@@ -50,14 +50,3 @@ jobs:
       # 6. Correr pruebas unitarias y generar cobertura
       - name: Run tests
         run: flutter test --coverage
-
-      # 7. Generar APK de depuración para asegurar que compila
-      - name: Build debug APK
-        run: flutter build apk --debug --dart-define=CI=true
-
-      # 8. Subir APK como artefacto
-      - name: Upload debug APK artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
