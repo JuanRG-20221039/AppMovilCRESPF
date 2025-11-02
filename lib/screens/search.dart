@@ -4,7 +4,7 @@ import 'results.dart';
 import 'saved.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: SearchScreen(),
+      home: const SearchScreen(),
       theme: ThemeData(
         primaryColor: Colors.green,
         scaffoldBackgroundColor: Colors.grey[50],
@@ -22,18 +22,47 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class SearchScreen extends StatelessWidget {
+class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
   @override
+  _SearchScreenState createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  void _searchBooks() {
+    final query = _searchController.text.trim();
+    print("🔍 Intentando buscar con query: '$query'");
+
+    if (query.isNotEmpty) {
+      print("✅ Navegando a ResultsScreen con query: '$query'");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResultsScreen(initialQuery: query),
+        ),
+      );
+    } else {
+      print("⚠️ Campo de búsqueda vacío");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Por favor, escribe algo para buscar.")),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    print("🧩 Construyendo SearchScreen...");
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // App Bar with Back Button and Logo
+            // Encabezado con logo y botón atrás
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 120.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 100.0),
               child: Row(
                 children: [
                   Container(
@@ -44,92 +73,105 @@ class SearchScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: IconButton(
-                      icon: Icon(Icons.arrow_back, color: Colors.white),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () {
+                        print("🔙 Regresando a LoginScreen");
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => LoginScreen(),
-                          ),
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
                         );
                       },
                     ),
                   ),
-                  Expanded(child: SizedBox()),
-                  CircleAvatar(
+                  const Spacer(),
+                  const CircleAvatar(
                     radius: 40,
                     backgroundColor: Colors.orange,
-                    child: Center(
-                      child: Icon(Icons.people, size: 40, color: Colors.white),
-                    ),
+                    child: Icon(Icons.people, size: 40, color: Colors.white),
                   ),
-                  Expanded(child: SizedBox()),
+                  const Spacer(),
                 ],
               ),
             ),
-            // Search Bar
+
+            // Barra de búsqueda funcional
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
               child: TextField(
+                controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Buscar libros...',
-                  prefixIcon: Icon(Icons.search, color: Colors.white),
-                  suffixIcon: Icon(Icons.mic, color: Colors.white),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                    onPressed: _searchBooks,
+                  ),
                   filled: true,
                   fillColor: Colors.green,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: EdgeInsets.symmetric(vertical: 15.0),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 15.0),
                 ),
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white),
+                onSubmitted: (value) {
+                  print("📥 Enter presionado con valor: '$value'");
+                  _searchBooks();
+                },
               ),
             ),
-            // Ver todo Button
+
+            // Botón Ver todo
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: ElevatedButton(
                 onPressed: () {
+                  print("📚 Clic en 'Ver todo'");
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ResultsScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const ResultsScreen(),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
-                  minimumSize: Size(double.infinity, 50),
+                  minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
                   elevation: 5,
                 ),
-                child: Text(
+                child: const Text(
                   'Ver todo',
                   style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
               ),
             ),
-            Spacer(),
-            // Libros Guardados Button
+
+            const Spacer(),
+
+            // Botón Libros guardados
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
               child: ElevatedButton(
                 onPressed: () {
+                  print("💾 Navegando a SavedScreen");
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => SavedScreen()),
+                    MaterialPageRoute(builder: (context) => const SavedScreen()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  minimumSize: Size(double.infinity, 50),
+                  minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
                   elevation: 5,
                 ),
-                child: Text(
+                child: const Text(
                   'Libros Guardados',
                   style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
