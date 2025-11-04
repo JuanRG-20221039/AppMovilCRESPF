@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service_stub.dart'
+    if (dart.library.html) '../services/auth_service_web.dart'
+    if (dart.library.io) '../services/auth_service_mobile.dart';
 import 'search.dart';
 import 'offline.dart';
 
@@ -19,6 +24,45 @@ class MyApp extends StatelessWidget {
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
+
+  Future<void> _signInWithGoogle(BuildContext context) async {
+    try {
+      debugPrint('[LoginScreen] Inicio de flujo Google Sign-In. kIsWeb=${kIsWeb}');
+      final beforeUser = FirebaseAuth.instance.currentUser;
+      debugPrint('[LoginScreen] Usuario antes de iniciar: ${beforeUser?.uid ?? 'null'} | email=${beforeUser?.email ?? 'null'}');
+
+      await signInWithGoogle(context);
+
+      final user = FirebaseAuth.instance.currentUser;
+      debugPrint('[LoginScreen] Google Sign-In completado. uid=${user?.uid ?? 'null'} | email=${user?.email ?? 'null'} | providers=${user?.providerData.map((p) => p.providerId).toList()} | isAnonymous=${user?.isAnonymous}');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sesión iniciada correctamente')),
+        );
+        debugPrint('[LoginScreen] Navegando a SearchScreen');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SearchScreen()),
+        );
+      }
+    } catch (e) {
+      // Captura del error y el stack trace para diagnóstico
+      debugPrint('[LoginScreen] Error al iniciar sesión con Google: $e');
+      // Intentamos obtener stack trace si está disponible
+      try {
+        throw e; // fuerza generación de stack en algunos entornos
+      } catch (err, st) {
+        debugPrint('[LoginScreen] Stacktrace: $st');
+      }
+      final current = FirebaseAuth.instance.currentUser;
+      debugPrint('[LoginScreen] Usuario actual tras error: ${current?.uid ?? 'null'} | email=${current?.email ?? 'null'}');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al iniciar sesión: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -142,14 +186,21 @@ class LoginScreen extends StatelessWidget {
                     style: TextStyle(color: Colors.white),
                   ),
                   SizedBox(width: 10),
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.white,
-                    child: Image.network(
-                      'https://www.google.com/favicon.ico',
-                      width: 20,
-                      height: 20,
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      debugPrint('[LoginScreen] Botón Google presionado');
+                      _signInWithGoogle(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black87,
                     ),
+                    icon: Image.network(
+                      'https://www.google.com/favicon.ico',
+                      width: 18,
+                      height: 18,
+                    ),
+                    label: const Text('Google'),
                   ),
                 ],
               ),

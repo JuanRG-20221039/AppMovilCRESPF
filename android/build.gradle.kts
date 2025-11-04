@@ -1,3 +1,7 @@
+// Nota: No declarar versión del plugin aquí para evitar conflicto con la
+// versión presente en el classpath (inyectada por Gradle/Flutter plugins).
+// El plugin se aplica en el módulo app.
+
 allprojects {
     repositories {
         google()
