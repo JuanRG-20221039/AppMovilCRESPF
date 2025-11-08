@@ -25,6 +25,7 @@ class SavedScreen extends StatefulWidget {
 
 class _SavedScreenState extends State<SavedScreen> {
   List<FileSystemEntity> downloadedFiles = [];
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -42,6 +43,16 @@ class _SavedScreenState extends State<SavedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    List<FileSystemEntity> filesToShow = downloadedFiles;
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.trim().toLowerCase();
+      filesToShow = downloadedFiles.where((f) {
+        final fullPath = f.path;
+        final parts = fullPath.split(RegExp(r'[\\/]'));
+        final fileName = parts.isNotEmpty ? parts.last : fullPath;
+        return fileName.toLowerCase().contains(q);
+      }).toList();
+    }
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -90,7 +101,6 @@ class _SavedScreenState extends State<SavedScreen> {
                     decoration: InputDecoration(
                       hintText: 'Buscar en los libros guardados...',
                       prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                      suffixIcon: const Icon(Icons.mic, color: Colors.grey),
                       filled: true,
                       fillColor: Colors.grey[200],
                       border: OutlineInputBorder(
@@ -101,6 +111,12 @@ class _SavedScreenState extends State<SavedScreen> {
                         vertical: 15.0,
                       ),
                     ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                      debugPrint('[SavedScreen] search="$value"');
+                    },
                   ),
                 ],
               ),
@@ -108,14 +124,15 @@ class _SavedScreenState extends State<SavedScreen> {
 
             // Resultados de libros descargados
             Expanded(
-              child: downloadedFiles.isEmpty
+              child: filesToShow.isEmpty
                   ? const Center(child: Text("No hay libros guardados"))
                   : ListView.builder(
                       padding: const EdgeInsets.all(16.0),
-                      itemCount: downloadedFiles.length,
+                      itemCount: filesToShow.length,
                       itemBuilder: (context, index) {
-                        final file = downloadedFiles[index];
-                        final fileName = file.path.split('/').last;
+                        final file = filesToShow[index];
+                        final parts = file.path.split(RegExp(r'[\\/]'));
+                        final fileName = parts.isNotEmpty ? parts.last : file.path;
                         return Card(
                           child: ListTile(
                             leading: const Icon(Icons.book),
@@ -138,7 +155,7 @@ class _SavedScreenState extends State<SavedScreen> {
                                 try {
                                   await file.delete();
                                   setState(() {
-                                    downloadedFiles.removeAt(index);
+                                    downloadedFiles.removeWhere((e) => e.path == file.path);
                                   });
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
