@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../services/auth_service_stub.dart'
     if (dart.library.html) '../services/auth_service_web.dart'
     if (dart.library.io) '../services/auth_service_mobile.dart';
@@ -22,8 +24,17 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   Future<void> _signInWithGoogle(BuildContext context) async {
     try {
@@ -61,6 +72,79 @@ class LoginScreen extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al iniciar sesión: $e')),
       );
+    }
+  }
+
+  Future<void> _loginWithEmailPassword() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    debugPrint('[LoginScreen] Iniciando loginMovil. email="$email" passwordLength=${password.length}');
+
+    if (email.isEmpty || password.isEmpty) {
+      debugPrint('[LoginScreen] Campos vacíos: email o contraseña');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Todos los campos son necesarios')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final uri = Uri.parse('https://paulofraireback.onrender.com/api/loginMovil');
+      final headers = {
+        'Content-Type': 'application/json',
+      };
+      final body = jsonEncode({
+        'email': email,
+        'password': password,
+      });
+
+      debugPrint('[LoginScreen] POST $uri headers=$headers body=$body');
+      final response = await http.post(uri, headers: headers, body: body);
+      debugPrint('[LoginScreen] Respuesta status=${response.statusCode} body=${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+        final user = data['user'] as Map<String, dynamic>?;
+        final token = user?['token'];
+        final name = user?['name'];
+        final role = user?['role'];
+        debugPrint('[LoginScreen] Login OK. name=$name role=$role tokenPresent=${token != null}');
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sesión iniciada correctamente')),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SearchScreen()),
+        );
+      } else {
+        String message = 'Error de servidor: ${response.statusCode}';
+        try {
+          final Map<String, dynamic> errData = jsonDecode(response.body) as Map<String, dynamic>;
+          if (errData['message'] is String) {
+            message = errData['message'] as String;
+          }
+        } catch (_) {
+          // Respuesta no JSON, mantenemos el mensaje genérico.
+        }
+        debugPrint('[LoginScreen] Login fallido: $message');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } catch (e, st) {
+      debugPrint('[LoginScreen] Error de conexión loginMovil: $e');
+      debugPrint('[LoginScreen] Stacktrace: $st');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error de conexión: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -128,7 +212,7 @@ class LoginScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(5),
                         ),
                       ),
-                      controller: TextEditingController(),
+                      controller: _emailController,
                     ),
                     SizedBox(height: 10),
                     TextField(
@@ -140,22 +224,17 @@ class LoginScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(5),
                         ),
                       ),
-                      controller: TextEditingController(),
+                      controller: _passwordController,
                       obscureText: true,
                     ),
                     SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => SearchScreen()),
-                        );
-                      },
+                      onPressed: _isLoading ? null : _loginWithEmailPassword,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
                         minimumSize: Size(double.infinity, 50),
                       ),
-                      child: Text('Entrar'),
+                      child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Entrar'),
                     ),
                     SizedBox(height: 10),
 
