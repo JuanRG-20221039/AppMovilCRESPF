@@ -22,7 +22,7 @@
 
     <application
         android:name="${applicationName}"
-        android:label="app_crespf"
+        android:label="CRESPF Biblioteca Digital"
         android:icon="@mipmap/ic_launcher">
 
 
