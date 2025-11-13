@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 import 'search.dart';
 import 'reading.dart';
 
@@ -33,6 +36,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
   List<dynamic> _allPdfs = [];
   List<dynamic> _filteredPdfs = [];
   late TextEditingController _searchController;
+  static const String guardianApiKey = 'e5d073f2-7ce0-4387-8510-04b6d18f5807';
+  List<dynamic> _guardianSuggestions = [];
+  bool _isLoadingGuardian = false;
+  String? _guardianError;
+  Timer? _guardianDebounce;
 
   @override
   void initState() {
@@ -40,9 +48,16 @@ class _ResultsScreenState extends State<ResultsScreen> {
     print("🧠 initState ejecutado");
 
     _searchController = TextEditingController(text: widget.initialQuery ?? "");
-    _searchController.addListener(_filterResults);
+    _searchController.addListener(_onSearchChanged);
 
     _futurePdfs = fetchPdfs();
+
+    final initQuery = widget.initialQuery?.trim();
+    if (initQuery != null && initQuery.isNotEmpty) {
+      _fetchGuardianSuggestions(initQuery);
+    } else {
+      _fetchGuardianSuggestions(null);
+    }
   }
 
   Future<List<dynamic>> fetchPdfs() async {
@@ -60,6 +75,15 @@ class _ResultsScreenState extends State<ResultsScreen> {
       print("❌ Error al cargar PDFs: ${response.body}");
       throw Exception("Error al cargar los PDFs");
     }
+  }
+
+  void _onSearchChanged() {
+    final text = _searchController.text.trim();
+    _filterResults();
+    _guardianDebounce?.cancel();
+    _guardianDebounce = Timer(const Duration(milliseconds: 500), () {
+      _fetchGuardianSuggestions(text.isEmpty ? null : text);
+    });
   }
 
   void _filterResults() {
@@ -85,9 +109,81 @@ class _ResultsScreenState extends State<ResultsScreen> {
     });
   }
 
+  Future<void> _fetchGuardianSuggestions([String? query]) async {
+    final qTrim = query?.trim();
+    setState(() {
+      _isLoadingGuardian = true;
+      _guardianError = null;
+    });
+
+    final params = {
+      'api-key': guardianApiKey,
+      'page-size': '5',
+      'order-by': 'newest',
+    };
+    if (qTrim != null && qTrim.isNotEmpty) {
+      params['q'] = qTrim;
+    }
+    final uri = Uri.https('content.guardianapis.com', 'search', params);
+    print('📰 Solicitando sugerencias Guardian: $uri');
+
+    try {
+      final resp = await http.get(uri);
+      print('📰 Guardian status: ${resp.statusCode}');
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body);
+        final results = (data['response']?['results'] ?? []) as List<dynamic>;
+        setState(() {
+          _guardianSuggestions = results;
+        });
+        print('📰 Sugerencias Guardian cargadas: ${_guardianSuggestions.length}');
+      } else {
+        setState(() {
+          _guardianError = 'Guardian error ${resp.statusCode}';
+          _guardianSuggestions = [];
+        });
+        print('❌ Guardian error body: ${resp.body}');
+      }
+    } catch (e) {
+      setState(() {
+        _guardianError = e.toString();
+        _guardianSuggestions = [];
+      });
+      print('❌ Excepción Guardian: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingGuardian = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _openGuardianArticle(String url) async {
+    print('🌐 Abriendo artículo en navegador: $url');
+    try {
+      final uri = Uri.parse(url.trim());
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        print('❌ No se pudo abrir el navegador para: $url');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir el navegador')),
+        );
+      }
+    } catch (e) {
+      print('❌ Error al abrir en navegador: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al abrir el navegador')),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
-    _searchController.removeListener(_filterResults);
+    _searchController.removeListener(_onSearchChanged);
+    _guardianDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -150,6 +246,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           print("🧹 Limpiando búsqueda");
                           _searchController.clear();
                           _filterResults();
+                          _fetchGuardianSuggestions(null);
                         },
                       ),
                       filled: true,
@@ -163,6 +260,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     onSubmitted: (value) {
                       print("📥 Enter presionado con valor: '$value'");
                       _filterResults();
+                      _fetchGuardianSuggestions(value);
                     },
                   ),
                 ],
@@ -205,40 +303,94 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     }
 
                     print("📚 Mostrando ${_filteredPdfs.length} PDFs filtrados");
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(16.0),
-                      itemCount: _filteredPdfs.length,
-                      itemBuilder: (context, index) {
-                        final pdf = _filteredPdfs[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          child: ListTile(
-                            leading: pdf["imagen"] != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      pdf["imagen"],
-                                      width: 50,
-                                      height: 50,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                : const Icon(Icons.picture_as_pdf, color: Colors.red, size: 40),
-                            title: Text(pdf["nombre"] ?? "Sin título"),
-                            subtitle: Text(pdf["descripcion"] ?? ""),
-                            tileColor: Colors.grey[200],
-                            onTap: () {
-                              print("📖 Abriendo PDF: ${pdf["archivo"]}");
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ReadingScreen(pdfUrl: pdf["archivo"]),
-                                ),
-                              );
-                            },
+                    final pdfCards = _filteredPdfs.map((pdf) {
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        child: ListTile(
+                          leading: pdf["imagen"] != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    pdf["imagen"],
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : const Icon(Icons.picture_as_pdf, color: Colors.red, size: 40),
+                          title: Text(pdf["nombre"] ?? "Sin título"),
+                          subtitle: Text(pdf["descripcion"] ?? ""),
+                          tileColor: Colors.grey[200],
+                          onTap: () {
+                            print("📖 Abriendo PDF: ${pdf["archivo"]}");
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ReadingScreen(pdfUrl: pdf["archivo"]),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }).toList();
+
+                    final guardianSection = <Widget>[
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      Row(
+                        children: const [
+                          Icon(Icons.public, color: Colors.black54),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Sugerencias externas (The Guardian)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
-                        );
-                      },
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (_isLoadingGuardian)
+                        const Center(child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12.0),
+                          child: CircularProgressIndicator(),
+                        ))
+                      else if (_guardianError != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Text('Error cargando sugerencias: $_guardianError'),
+                        )
+                      else if (_guardianSuggestions.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                          child: Text('No hay sugerencias disponibles por ahora'),
+                        )
+                      else
+                        ..._guardianSuggestions.map((item) {
+                          final title = (item['webTitle'] ?? '').toString();
+                          final section = (item['sectionName'] ?? '').toString();
+                          final webUrl = (item['webUrl'] ?? '').toString();
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            child: ListTile(
+                              leading: const Icon(Icons.article, color: Colors.blueGrey, size: 32),
+                              title: Text(title),
+                              subtitle: Text(section.isNotEmpty ? section : 'The Guardian'),
+                              onTap: () => _openGuardianArticle(webUrl),
+                            ),
+                          );
+                        }).toList(),
+                    ];
+
+                    return ListView(
+                      padding: const EdgeInsets.all(16.0),
+                      children: [
+                        ...pdfCards,
+                        ...guardianSection,
+                      ],
                     );
                   }
                 },
